@@ -309,7 +309,7 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/etc/cron.daily/dpkg rootfs/etc/cron.daily/
 	cp --preserve=xattr,timestamps tmp/etc/dpkg/dpkg.cfg rootfs/etc/dpkg/
 	cp --preserve=xattr,timestamps tmp/etc/logrotate.d/dpkg rootfs/etc/logrotate.d/
-	cp_executable tmp/sbin/start-stop-daemon rootfs/sbin/
+	cp_executable tmp/usr/sbin/start-stop-daemon rootfs/usr/sbin/
 	cp_executable tmp/usr/bin/dpkg rootfs/usr/bin/
 	cp_executable tmp/usr/bin/dpkg-deb rootfs/usr/bin/
 	cp_executable tmp/usr/bin/dpkg-divert rootfs/usr/bin/
