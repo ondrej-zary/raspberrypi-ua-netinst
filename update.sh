@@ -199,9 +199,9 @@ download_package_list() {
 				exit 1
 			fi
 
-			# Verify the checksum of the Packages file, assuming that the last checksums in the Release file are SHA256 sums
+			# Verify the SHA256 checksum of the Packages file
 			echo -n "Verifying ${package_section} package list... "
-			if [ "$(grep "${package_section}/binary-armhf/Packages${extension}" "${1}_Release" | tail -n1 | awk '{print $1}')" = "$(sha256sum "tmp${extension}" | awk '{print $1}')" ]; then
+			if [ "$(sed '1,/^SHA256:$/d' "${1}_Release" | grep "${package_section}/binary-armhf/Packages${extension}" | head -n1 | awk '{print $1}')" = "$(sha256sum "tmp${extension}" | awk '{print $1}')" ]; then
 				echo "OK"
 			else
 				echo -e "ERROR\nThe checksum of file '${package_section}/binary-armhf/Packages${extension}' doesn't match!"
