@@ -493,10 +493,16 @@ rm -rf bootfs
 mkdir -p bootfs/raspberrypi-ua-netinst
 
 # raspberrypi-bootloader components and kernel
-cp --preserve=xattr,timestamps -r tmp/boot/* bootfs/
-mv bootfs/kernel*.img bootfs/raspberrypi-ua-netinst/
-mv bootfs/*.dtb bootfs/raspberrypi-ua-netinst/
-mv bootfs/overlays bootfs/raspberrypi-ua-netinst/
+cp --preserve=xattr,timestamps -r tmp/usr/lib/raspi-firmware/* bootfs/
+cp --preserve=xattr,timestamps tmp/boot/vmlinuz-*-v6 bootfs/raspberrypi-ua-netinst/kernel.img
+cp --preserve=xattr,timestamps tmp/boot/vmlinuz-*-v7 bootfs/raspberrypi-ua-netinst/kernel7.img
+cp --preserve=xattr,timestamps tmp/boot/vmlinuz-*-v7l bootfs/raspberrypi-ua-netinst/kernel7l.img
+cp --preserve=xattr,timestamps tmp/boot/vmlinuz-*-v8 bootfs/raspberrypi-ua-netinst/kernel8.img
+# *.dtb are the same v6,v7 and v7l kernels but there are additional ones in v8 kernel
+cp --preserve=xattr,timestamps tmp/usr/lib/linux-image-*-v6/*.dtb bootfs/raspberrypi-ua-netinst/
+cp --preserve=xattr,timestamps tmp/usr/lib/linux-image-*-v8/broadcom/*.dtb bootfs/raspberrypi-ua-netinst/
+# overlays are the same in all kernels, copy any of them
+cp --preserve=xattr,timestamps -r tmp/usr/lib/linux-image-*-v6/overlays bootfs/raspberrypi-ua-netinst/
 
 if [ ! -f bootfs/config.txt ] ; then
 	touch bootfs/config.txt

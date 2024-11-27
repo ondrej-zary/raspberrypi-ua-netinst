@@ -21,8 +21,11 @@ release=bookworm
 packages=()
 
 # programs
-packages+=("raspberrypi-bootloader")
-packages+=("raspberrypi-kernel")
+packages+=("raspi-firmware")
+packages+=("linux-image-rpi-v6")
+packages+=("linux-image-rpi-v7")
+packages+=("linux-image-rpi-v7l")
+packages+=("linux-image-rpi-v8")
 packages+=("firmware-brcm80211")
 packages+=("wireless-regdb")
 packages+=("btrfs-progs")
@@ -189,11 +192,11 @@ download_package_list() {
 	for extension in "${extensions[@]}"; do
 
 		# Check that this extension is available
-		if grep -q "${package_section}/binary-armhf/Packages${extension}" "${1}_Release"; then
+		if grep -q "${package_section}/binary-${3}/Packages${extension}" "${1}_Release"; then
 
 			# Download Packages file
 			echo -e "\nDownloading ${package_section} package list..."
-			if ! download_file "${2}/dists/$release/$package_section/binary-armhf/Packages${extension}" "tmp${extension}"; then
+			if ! download_file "${2}/dists/$release/$package_section/binary-${3}/Packages${extension}" "tmp${extension}"; then
 				echo -e "ERROR\nDownloading '${package_section}' package list failed! Exiting."
 				cd ..
 				exit 1
@@ -201,10 +204,10 @@ download_package_list() {
 
 			# Verify the SHA256 checksum of the Packages file
 			echo -n "Verifying ${package_section} package list... "
-			if [ "$(sed '1,/^SHA256:$/d' "${1}_Release" | grep "${package_section}/binary-armhf/Packages${extension}" | head -n1 | awk '{print $1}')" = "$(sha256sum "tmp${extension}" | awk '{print $1}')" ]; then
+			if [ "$(sed '1,/^SHA256:$/d' "${1}_Release" | grep "${package_section}/binary-${3}/Packages${extension}" | head -n1 | awk '{print $1}')" = "$(sha256sum "tmp${extension}" | awk '{print $1}')" ]; then
 				echo "OK"
 			else
-				echo -e "ERROR\nThe checksum of file '${package_section}/binary-armhf/Packages${extension}' doesn't match!"
+				echo -e "ERROR\nThe checksum of file '${package_section}/binary-${3}/Packages${extension}' doesn't match!"
 				cd ..
 				exit 1
 			fi
@@ -219,7 +222,7 @@ download_package_list() {
 			elif [ "${extension}" = "" ]; then
 				decompressor="cat "
 			fi
-			${decompressor} "tmp${extension}" >> "${1}_Packages"
+			${decompressor} "tmp${extension}" >> "${1}-${3}_Packages"
 			rm "tmp${extension}"
 			break
 		fi
@@ -242,20 +245,20 @@ download_package_lists() {
 	echo -n > "${1}_Packages"
 	if [ "${1}" != "debian" ]; then
 		package_section=firmware
-		download_package_list "${1}" "${2}"
+		download_package_list "${1}" "${2}" "${3}"
 	else
 		package_section=non-free-firmware
-		download_package_list "${1}" "${2}"
+		download_package_list "${1}" "${2}" "${3}"
 	fi
 	package_section=main
-	download_package_list "${1}" "${2}"
+	download_package_list "${1}" "${2}" "${3}"
 	package_section=non-free
-	download_package_list "${1}" "${2}"
+	download_package_list "${1}" "${2}" "${3}"
 }
 
 add_packages() {
 	echo -e "\nAdding required packages..."
-	filter_package_list < "${1}_Packages" >"${1}_Packages.tmp"
+	filter_package_list < "${1}-${3}_Packages" >"${1}-${3}_Packages.tmp"
 	while true; do
 		libs=()
 		for pkg in "${packages[@]}"; do
@@ -278,7 +281,7 @@ add_packages() {
 				elif [ "${k}" = "" ]; then
 					break
 				fi
-			done < <(grep -A 4 -m 1 ^Package:\ "$pkg"$ "${1}_Packages.tmp")
+			done < <(grep -A 4 -m 1 ^Package:\ "$pkg"$ "${1}-${3}_Packages.tmp")
 			if [ -z "${current_package}" ]; then # package not found
 				continue
 			fi
@@ -287,7 +290,7 @@ add_packages() {
 			packages_debs+=("${2}/${current_filename}")
 			packages_sha256+=("${current_sha256}  $(basename "${current_filename}")")
 			packages_done+=("${current_package}")
-			while IFS='' read -r line; do libs+=("$line"); done < <(printf '%s\n' "${current_depends[@]}" | grep "lib")
+			while IFS='' read -r line; do libs+=("$line"); done < <(printf '%s\n' "${current_depends[@]}" | grep -E "lib|linux-image")
 		done
 		# remove duplicate libs
 		mapfile -t libs < <(printf '%s\n' "${libs[@]}" | sort | uniq)
@@ -371,17 +374,19 @@ fi
 	fi
 
 	## Download package list
-	download_package_lists raspberry "${mirror_raspberrypi}"
-	download_package_lists raspbian "${mirror_raspbian}"
-	download_package_lists debian "${mirror_debian}"
+	download_package_lists raspberry "${mirror_raspberrypi}" armhf
+	download_package_lists raspberry "${mirror_raspberrypi}" arm64
+	download_package_lists raspbian "${mirror_raspbian}" armhf
+	download_package_lists debian "${mirror_debian}" armhf
 
 	## Select packages for download
 	packages_debs=()
 	packages_sha256=()
 
-	add_packages raspberry "${mirror_raspberrypi}"
-	add_packages raspbian "${mirror_raspbian}"
-	add_packages debian "${mirror_debian}"
+	add_packages raspberry "${mirror_raspberrypi}" armhf
+	add_packages raspbian "${mirror_raspbian}" armhf
+	add_packages debian "${mirror_debian}" armhf
+	add_packages raspberry "${mirror_raspberrypi}" arm64
 	if ! allfound; then
 		echo "ERROR: Unable to find all required packages in package list!"
 		echo "Missing packages: '${packages[*]}'"
