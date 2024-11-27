@@ -356,7 +356,7 @@ function create_cpio {
 	# iproute2 components
 	cp_executable tmp/bin/ip rootfs/bin/
 
-	# lsb-base components
+	# sysvinit-utils (previously lsb-base) components
 	cp --preserve=xattr,timestamps tmp/lib/lsb/init-functions rootfs/lib/lsb/
 	cp --preserve=xattr,timestamps tmp/lib/lsb/init-functions.d/00-verbose rootfs/lib/lsb/init-functions.d/
 
