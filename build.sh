@@ -459,6 +459,11 @@ function create_cpio {
 		cp --preserve=xattr,timestamps "${lib}" "$(echo "${lib}" | sed -e 's/^tmp\//rootfs\//')"
 	done
 
+	# if /lib/ld-linux-armhf.so.3 is not present, create it as a symlink
+	if [ ! -e rootfs/lib/ld-linux-armhf.so.3 ]; then
+		ln -s arm-linux-gnueabihf/ld-linux-armhf.so.3 rootfs/lib/ld-linux-armhf.so.3
+	fi
+
 	INITRAMFS="../raspberrypi-ua-netinst.cpio.gz"
 	(cd rootfs && find . | cpio -H newc -ov | gzip --best > $INITRAMFS)
 
