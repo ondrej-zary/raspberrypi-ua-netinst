@@ -163,7 +163,6 @@ function create_cpio {
 	mkdir -p rootfs/usr/sbin/
 	mkdir -p rootfs/usr/share/{dpkg,keyrings,libc-bin}
 	mkdir -p rootfs/var/lib/dpkg/{alternatives,info,parts,updates}
-	mkdir -p rootfs/var/lib/ntpdate
 	mkdir -p rootfs/var/log/
 	mkdir -p rootfs/var/run/
 
@@ -368,11 +367,8 @@ function create_cpio {
 	# netcat-openbsd
 	cp_executable tmp/bin/nc.openbsd rootfs/bin/nc
 
-	# ntpdate components
-	cp --preserve=xattr,timestamps tmp/etc/default/ntpdate rootfs/etc/default/
-	sed -i s/NTPDATE_USE_NTP_CONF=yes/NTPDATE_USE_NTP_CONF=no/ rootfs/etc/default/ntpdate
-	cp_executable tmp/usr/sbin/ntpdate rootfs/usr/sbin/
-	cp_executable tmp/usr/sbin/ntpdate-debian rootfs/usr/sbin/
+	# rdate
+	cp_executable tmp/usr/sbin/rdate rootfs/usr/sbin/
 
 	# raspberrypi.org GPG key
 	cp --preserve=xattr,timestamps ../"${packages_dir}"/raspberrypi.gpg.key rootfs/usr/share/keyrings/
