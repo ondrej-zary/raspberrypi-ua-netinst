@@ -1207,7 +1207,21 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ "$(find "${tmp_bootfs}"/raspberrypi-ua-netinst/config/apt/ -maxdepth 1 -type f -name "*.list" 2> /dev/null | wc -l)" != 0 ]; then
 		base_packages="${base_packages},apt-transport-https"
 	fi
-	base_packages_postinstall="raspberrypi-bootloader,raspberrypi-kernel"
+	# determine which kernel package to install
+	# v8 kernel is for everything running in 64-bit mode
+	if [ "${arch}" = "arm64" ]; then
+		kernel_type="v8"
+	# v7l kernel is for 4 and 400
+	elif [ "${rpi_hardware:0:1}" = "4" ]; then
+		kernel_type="v7l"
+	# v6 kernel is for everything armv6l-based
+	elif [ "$(uname -m)" = "armv6l" ]; then
+		kernel_type="v6"
+	# v7 kernel is for anything other
+	else
+		kernel_type="v7"
+	fi
+	base_packages_postinstall="raspi-firmware,linux-image-rpi-${kernel_type}"
 	base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
 
 	# minimal
