@@ -9,7 +9,6 @@ variables_reset() {
 	am_subscript=
 	final_action=
 	rpi_hardware=
-	rpi_hardware_version=
 	preinstall_reboot=
 	bootpartition=
 	rootdev=
@@ -204,7 +203,7 @@ led_sos() {
 
 	# Setting leds on and off works the other way round on Pi Zero and Pi Zero W
 	# Also led0 (the only led on the Zeros) is the activity led
-	if [ "${rpi_hardware_version:0:4}" != "Zero" ]; then
+	if [ "${rpi_hardware:0:10}" != "model-zero" ]; then
 		led_on=1
 		led_off=0
 	else
@@ -659,57 +658,7 @@ tee < "${logfile}.pipe" "${logfile}" &
 exec &> "${logfile}.pipe"
 rm "${logfile}.pipe"
 
-# detecting model based on http://elinux.org/RPi_HardwareHistory
-rpi_hardware="$(grep Revision /proc/cpuinfo | cut -d " " -f 2 | sed 's/^1000//')"
-case "${rpi_hardware}" in
-	"0002") rpi_hardware_version="B" ;;
-	"0003") rpi_hardware_version="B" ;;
-	"0004") rpi_hardware_version="B" ;;
-	"0005") rpi_hardware_version="B" ;;
-	"0006") rpi_hardware_version="B" ;;
-	"0007") rpi_hardware_version="A" ;;
-	"0008") rpi_hardware_version="A" ;;
-	"0009") rpi_hardware_version="A" ;;
-	"000d") rpi_hardware_version="B" ;;
-	"000e") rpi_hardware_version="B" ;;
-	"000f") rpi_hardware_version="B" ;;
-	"0010") rpi_hardware_version="B+" ;;
-	"0011") rpi_hardware_version="Compute Module 1" ;;
-	"0012") rpi_hardware_version="A+" ;;
-	"0013") rpi_hardware_version="B+" ;;
-	"0014") rpi_hardware_version="Compute Module 1" ;;
-	"0015") rpi_hardware_version="A+" ;;
-	"a01040") rpi_hardware_version="2 Model B" ;;
-	"a01041") rpi_hardware_version="2 Model B" ;;
-	"a21041") rpi_hardware_version="2 Model B" ;;
-	"a22042") rpi_hardware_version="2 Model B+" ;;
-	"900021") rpi_hardware_version="A+" ;;
-	"900032") rpi_hardware_version="B+" ;;
-	"900092") rpi_hardware_version="Zero" ;;
-	"900093") rpi_hardware_version="Zero" ;;
-	"920093") rpi_hardware_version="Zero" ;;
-	"9000c1") rpi_hardware_version="Zero W" ;;
-	"a02082") rpi_hardware_version="3 Model B" ;;
-	"a020a0") rpi_hardware_version="Compute Module 3 (Lite)" ;;
-	"a22082") rpi_hardware_version="3 Model B" ;;
-	"a32082") rpi_hardware_version="3 Model B" ;;
-	"a020d3") rpi_hardware_version="3 Model B+" ;;
-	"9020e0") rpi_hardware_version="3 Model A+" ;;
-	"a02100") rpi_hardware_version="Compute Module 3+" ;;
-	"a03111") rpi_hardware_version="4 Model B" ;;
-	"b03111") rpi_hardware_version="4 Model B" ;;
-	"b03112") rpi_hardware_version="4 Model B" ;;
-	"b03114") rpi_hardware_version="4 Model B" ;;
-	"b03115") rpi_hardware_version="4 Model B" ;;
-	"c03111") rpi_hardware_version="4 Model B" ;;
-	"c03112") rpi_hardware_version="4 Model B" ;;
-	"c03114") rpi_hardware_version="4 Model B" ;;
-	"c03115") rpi_hardware_version="4 Model B" ;;
-	"d03114") rpi_hardware_version="4 Model B" ;;
-	"d03115") rpi_hardware_version="4 Model B" ;;
-	"902120") rpi_hardware_version="Zero 2 W" ;;
-	*) rpi_hardware_version="unknown (${rpi_hardware})" ;;
-esac
+rpi_hardware="$(cat /proc/device-tree/compatible | tr '\0' '\n' | head -1 | cut -d, -f 2)"
 
 echo
 echo "=================================================="
@@ -717,7 +666,7 @@ echo "raspberrypi-ua-netinst"
 echo "=================================================="
 echo "Revision __VERSION__"
 echo "Built on __DATE__"
-echo "Running on Raspberry Pi version ${rpi_hardware_version}"
+echo "Running on $(tr '\0' '\n' </proc/device-tree/model) (${rpi_hardware})"
 echo "=================================================="
 echo "https://github.com/FooDeas/raspberrypi-ua-netinst/"
 echo "=================================================="
@@ -794,10 +743,10 @@ fi
 # MSD boot
 if [ "${usbboot}" = "1" ] ; then
 	echo -n "  Checking USB boot flag... "
-	if [ "${rpi_hardware_version}" = "A" ] || [ "${rpi_hardware_version}" = "A+" ] || [ "${rpi_hardware_version}" = "B" ] || [ "${rpi_hardware_version}" = "B+" ] || [ "${rpi_hardware_version}" = "Zero" ] || [ "${rpi_hardware_version}" = "Zero W" ] || [ "${rpi_hardware_version}" = "Compute Module 1" ]; then
+	if [ "${rpi_hardware:0:7}" = "model-a" ] || [ "${rpi_hardware:0:7}" = "model-b" ] || [ "${rpi_hardware}" = "model-zero" ] || [ "${rpi_hardware}" = "model-zero-w" ] || [ "${rpi_hardware}" = "compute-module" ]; then
 		echo -e "\n    Your device does not allow booting from USB. Disable booting from USB in installer-config.txt to proceed."
 		fail_blocking
-	elif [ "${rpi_hardware_version}" = "2 Model B" ] || [ "${rpi_hardware_version}" = "2 Model B+" ] || [ "${rpi_hardware_version}" = "3 Model A" ] || [ "${rpi_hardware_version}" = "3 Model A+" ] || [ "${rpi_hardware_version}" = "3 Model B" ] || [ "${rpi_hardware_version}" = "Zero 2 W" ] || [ "${rpi_hardware_version}" = "Compute Module 3 (Lite)" ] || [ "${rpi_hardware_version}" = "Compute Module 3+" ]; then
+	elif [ "${rpi_hardware:0:1}" = "2" ] || [ "${rpi_hardware:0:1}" = "3" ] || [ "${rpi_hardware}" = "model-zero-2-w" ]; then
 		msd_boot_enabled="$(vcgencmd otp_dump | grep 17: | cut -b 4-5)"
 		msd_boot_enabled="$(printf "%s" "${msd_boot_enabled}" | xxd -r -p | xxd -b | cut -d' ' -f2 | cut -b 3)"
 		if [ "${msd_boot_enabled}" = "0" ]; then
