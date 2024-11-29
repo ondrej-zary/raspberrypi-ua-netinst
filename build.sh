@@ -255,6 +255,8 @@ function create_cpio {
 	cp_executable tmp/bin/busybox rootfs/bin
 	cd rootfs && ln -s bin/busybox init; cd ..
 	echo "\$MODALIAS=.* 0:0 660 @/opt/busybox/bin/modprobe \"\$MODALIAS\"" > rootfs/etc/mdev.conf
+	# some devices in /dev must have 666 permissions
+	echo "(full|null|ptmx|random|tty|urandom|zero) 0:0 666" >> rootfs/etc/mdev.conf
 
 	# bash-static components
 	cp --preserve=xattr,timestamps tmp/bin/bash-static rootfs/bin
