@@ -438,13 +438,10 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/lib/firmware/regulatory.db-debian rootfs/lib/firmware/regulatory.db
 	cp --preserve=xattr,timestamps tmp/lib/firmware/regulatory.db.p7s-debian rootfs/lib/firmware/regulatory.db.p7s
 
-	# vcgencmd
-	## libraspberrypi-bin
-	mkdir -p rootfs/usr/bin
+	# vcgencmd (raspi-utils-core)
 	cp_executable tmp/usr/bin/vcgencmd rootfs/usr/bin/
 
 	# xxd
-	mkdir -p rootfs/usr/bin
 	cp_executable tmp/usr/bin/xxd rootfs/usr/bin/
 
 	# install additional resources

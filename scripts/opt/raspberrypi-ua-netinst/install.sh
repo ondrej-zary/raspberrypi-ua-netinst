@@ -1283,7 +1283,6 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 		server_packages="${server_packages},systemd-sysv"
 	fi
 	server_packages_postinstall="${minimal_packages_postinstall},${server_packages_postinstall}"
-	server_packages_postinstall="${server_packages_postinstall},libraspberrypi-bin"
 	if [ "${arch}" != "arm64" ]; then
 		server_packages_postinstall="${server_packages_postinstall},raspi-copies-and-fills"
 	fi
