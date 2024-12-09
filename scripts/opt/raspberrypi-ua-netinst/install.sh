@@ -2246,8 +2246,23 @@ for i in $(seq 1 "${installer_pkg_downloadretries}"); do
 	fi
 done
 
+# Install raspi-firmware and initramfs-tools first so we can disable initramfs (when not needed)
+# before it gets trigered by a kernel package
 echo
-echo "Installing kernel, bootloader (=firmware) and user packages..."
+echo "Installing bootloader (=firmware) and initramfs-tools..."
+eval chroot /rootfs /usr/bin/apt-get -y install raspi-firmware initramfs-tools 2>&1 | output_filter
+if [ "${PIPESTATUS[0]}" -eq 0 ]; then
+	echo "OK"
+else
+	echo "FAILED !"
+fi
+if [ ! "${kernel_module}" = true ]; then
+	sed -i 's/#SKIP_INITRAMFS_GEN=no/SKIP_INITRAMFS_GEN=yes/' /rootfs/etc/default/raspi-firmware
+	sed -i 's/update_initramfs=yes/update_initramfs=no/' /rootfs/etc/initramfs-tools/update-initramfs.conf
+fi
+
+echo
+echo "Installing kernel and user packages..."
 eval chroot /rootfs /usr/bin/apt-get -y upgrade "${packages_postinstall}" 2>&1 | output_filter
 if [ "${PIPESTATUS[0]}" -eq 0 ]; then
 	echo "OK"
