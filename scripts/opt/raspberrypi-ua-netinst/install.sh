@@ -368,15 +368,15 @@ convert_listvariable() {
 install_files() {
 	local file_to_read="${1}"
 	echo "Adding files & folders listed in /boot/raspberrypi-ua-netinst/config/files/${file_to_read}..."
-	inputfile_sanitize "/rootfs/boot/raspberrypi-ua-netinst/config/files/${file_to_read}"
-	grep -v "^[[:space:]]*#\|^[[:space:]]*$" "/rootfs/boot/raspberrypi-ua-netinst/config/files/${file_to_read}" | while read -r line; do
+	inputfile_sanitize "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/files/${file_to_read}"
+	grep -v "^[[:space:]]*#\|^[[:space:]]*$" "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/files/${file_to_read}" | while read -r line; do
 		owner=$(echo "${line}" | awk '{ print $1 }')
 		perms=$(echo "${line}" | awk '{ print $2 }')
 		file=$(echo "${line}" | awk '{ print $3 }')
 		echo "  ${file}"
-		if [ ! -d "/rootfs/boot/raspberrypi-ua-netinst/config/files/root${file}" ]; then
+		if [ ! -d "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/files/root${file}" ]; then
 			mkdir -p "/rootfs$(dirname "${file}")"
-			cp "/rootfs/boot/raspberrypi-ua-netinst/config/files/root${file}" "/rootfs${file}"
+			cp "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/files/root${file}" "/rootfs${file}"
 		else
 			mkdir -p "/rootfs/${file}"
 		fi
@@ -1605,7 +1605,8 @@ echo "OK"
 echo -n "Mounting new filesystems... "
 mount "${rootpartition}" /rootfs -o "${rootfs_install_mount_options}" || fail
 mkdir /rootfs/boot || fail
-mount "${bootpartition}" /rootfs/boot || fail
+mkdir /rootfs/boot/firmware || fail
+mount "${bootpartition}" /rootfs/boot/firmware || fail
 echo "OK"
 
 # use 256MB file based swap during installation if needed
@@ -1681,9 +1682,9 @@ fi
 if [ -n "${root_ssh_pubkey}" ]; then
 	echo -n "  Setting root SSH key"
 	if mkdir -p /rootfs/root/.ssh && chmod 700 /rootfs/root/.ssh; then
-		if [ -f "/rootfs/boot/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" ]; then
+		if [ -f "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" ]; then
 			echo -n " from file '${root_ssh_pubkey}'... "
-			cp "/rootfs/boot/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" /rootfs/root/.ssh/authorized_keys || fail
+			cp "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" /rootfs/root/.ssh/authorized_keys || fail
 			echo "OK"
 		else
 			echo -n "... "
@@ -1728,9 +1729,9 @@ if [ -n "${username}" ]; then
 	if [ -n "${user_ssh_pubkey}" ]; then
 		echo -n "  Setting SSH key for '${username}'"
 		if mkdir -p "/rootfs/home/${username}/.ssh" && chmod 700 "/rootfs/home/${username}/.ssh"; then
-			if [ -f "/rootfs/boot/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" ]; then
+			if [ -f "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" ]; then
 				echo -n " from file '${user_ssh_pubkey}'... "
-				cp "/rootfs/boot/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" "/rootfs/home/${username}/.ssh/authorized_keys" || fail
+				cp "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" "/rootfs/home/${username}/.ssh/authorized_keys" || fail
 				echo "OK"
 			else
 				echo -n "... "
@@ -1802,7 +1803,7 @@ rootpartition_uuid=PARTUUID=$(blkid -o value -s PARTUUID ${rootpartition})
 echo -n "  Configuring /etc/fstab... "
 touch /rootfs/etc/fstab || fail
 {
-	echo "${bootpartition_uuid} /boot vfat defaults 0 2"
+	echo "${bootpartition_uuid} /boot/firmware vfat defaults 0 2"
 	if [ "${rootfstype}" = "f2fs" ]; then
 		echo "${rootpartition_uuid} / ${rootfstype} ${rootfs_mount_options} 0 0"
 	elif [ "${rootfstype}" = "btrfs" ]; then
@@ -2100,8 +2101,8 @@ fi
 # copy apt's sources.list to the target system
 echo "Configuring apt:"
 echo -n "  Configuring Raspbian/Debian repository... "
-if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list" ]; then
-	sed "s/__RELEASE__/${release_raspbian}/g" "/rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
+if [ -e "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/apt/sources.list" ]; then
+	sed "s/__RELEASE__/${release_raspbian}/g" "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
 else
 	if [ "${arch}" = "arm64" ]; then
 		echo "deb ${mirror} ${release_raspbian} main contrib non-free" > "/rootfs/etc/apt/sources.list" || fail
@@ -2124,15 +2125,15 @@ echo -n "  Adding raspberrypi.org GPG key to apt-key... "
 echo "OK"
 
 echo -n "  Configuring RaspberryPi repository... "
-if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" ]; then
-	sed "s/__RELEASE__/${release_base}/g" "/rootfs/boot/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" > "/rootfs/etc/apt/sources.list.d/raspberrypi.org.list" || fail
+if [ -e "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" ]; then
+	sed "s/__RELEASE__/${release_base}/g" "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" > "/rootfs/etc/apt/sources.list.d/raspberrypi.org.list" || fail
 else
 	sed "s/__RELEASE__/${release_base}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/raspberrypi.org.list" > "/rootfs/etc/apt/sources.list.d/raspberrypi.org.list" || fail
 fi
 echo "OK"
 echo -n "  Configuring RaspberryPi preference... "
-if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" ]; then
-	sed "s/__RELEASE__/${release_base}/g" "/rootfs/boot/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" > "/rootfs/etc/apt/preferences.d/archive_raspberrypi_org.pref" || fail
+if [ -e "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" ]; then
+	sed "s/__RELEASE__/${release_base}/g" "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" > "/rootfs/etc/apt/preferences.d/archive_raspberrypi_org.pref" || fail
 else
 	sed "s/__RELEASE__/${release_base}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/archive_raspberrypi_org.pref" > "/rootfs/etc/apt/preferences.d/archive_raspberrypi_org.pref" || fail
 fi
@@ -2140,7 +2141,7 @@ echo "OK"
 
 # save the current location so that we can go back to it later on
 old_dir=$(pwd)
-cd /rootfs/boot/raspberrypi-ua-netinst/config/apt/ || fail
+cd /rootfs/boot/firmware/raspberrypi-ua-netinst/config/apt/ || fail
 
 # iterate through all the *.list files and add them to /etc/apt/sources.list.d
 for listfile in ./*.list
@@ -2279,18 +2280,18 @@ chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &> /dev/null || fail
 echo "OK"
 
 echo -n "Configuring bootloader to start the installed system..."
-if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/boot/config.txt" ]; then
-	cp /rootfs/boot/raspberrypi-ua-netinst/config/boot/config.txt /rootfs/boot/config.txt
+if [ -e "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/boot/config.txt" ]; then
+	cp /rootfs/boot/firmware/raspberrypi-ua-netinst/config/boot/config.txt /rootfs/boot/firmware/config.txt
 else
-	cp /opt/raspberrypi-ua-netinst/res/boot/config.txt /rootfs/boot/config.txt
+	cp /opt/raspberrypi-ua-netinst/res/boot/config.txt /rootfs/boot/firmware/config.txt
 fi
-if [ -n "$(tail -c1 /rootfs/boot/config.txt)" ]; then
-	echo >> /rootfs/boot/config.txt
+if [ -n "$(tail -c1 /rootfs/boot/firmware/config.txt)" ]; then
+	echo >> /rootfs/boot/firmware/config.txt
 fi
 
 # extend device initialization time when booting from usb
 if [ "${usbboot}" = "1" ]; then
-	touch /rootfs/boot/TIMEOUT
+	touch /rootfs/boot/firmware/TIMEOUT
 fi
 echo "OK"
 
@@ -2302,7 +2303,7 @@ line_add_if_boolean disable_raspberries cmdline_custom "logo.nologo"
 line_add_if_set console_blank cmdline_custom "consoleblank=${console_blank}"
 line_add_if_boolean_not ip_ipv6 cmdline_custom "ipv6.disable=1"
 line_add_if_set cmdline_custom cmdline "${cmdline_custom}"
-echo "${cmdline}" > /rootfs/boot/cmdline.txt
+echo "${cmdline}" > /rootfs/boot/firmware/cmdline.txt
 echo "OK"
 
 # Password warning
@@ -2314,42 +2315,42 @@ fi
 
 # enable spi if specified in the configuration file
 if [ "${spi_enable}" = "1" ]; then
-	if [ "$(grep -c "^dtparam=spi=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-	sed -i "s/^#\(dtparam=spi=on\)/\1/" /rootfs/boot/config.txt
-		sed -i "s/^\(dtparam=spi=.*\)/#\1/" /rootfs/boot/config.txt
-		echo "dtparam=spi=on" >> /rootfs/boot/config.txt
+	if [ "$(grep -c "^dtparam=spi=.*" /rootfs/boot/firmware/config.txt)" -ne 1 ]; then
+	sed -i "s/^#\(dtparam=spi=on\)/\1/" /rootfs/boot/firmware/config.txt
+		sed -i "s/^\(dtparam=spi=.*\)/#\1/" /rootfs/boot/firmware/config.txt
+		echo "dtparam=spi=on" >> /rootfs/boot/firmware/config.txt
 	fi
 fi
 
 # enable i2c if specified in the configuration file
 if [ "${i2c_enable}" = "1" ]; then
-	sed -i "s/^#\(dtparam=i2c_arm=on\)/\1/" /rootfs/boot/config.txt
-	if [ "$(grep -c "^dtparam=i2c_arm=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-		sed -i "s/^\(dtparam=i2c_arm=.*\)/#\1/" /rootfs/boot/config.txt
-		echo "dtparam=i2c_arm=on" >> /rootfs/boot/config.txt
+	sed -i "s/^#\(dtparam=i2c_arm=on\)/\1/" /rootfs/boot/firmware/config.txt
+	if [ "$(grep -c "^dtparam=i2c_arm=.*" /rootfs/boot/firmware/config.txt)" -ne 1 ]; then
+		sed -i "s/^\(dtparam=i2c_arm=.*\)/#\1/" /rootfs/boot/firmware/config.txt
+		echo "dtparam=i2c_arm=on" >> /rootfs/boot/firmware/config.txt
 	fi
 	module_enable "i2c-dev" "i2c"
 	if [ -n "${i2c_baudrate}" ]; then
-		if grep -q "i2c_baudrate=" /rootfs/boot/config.txt; then
-			sed -i "s/\(.*i2c_baudrate=.*\)/#\1/" /rootfs/boot/config.txt
+		if grep -q "i2c_baudrate=" /rootfs/boot/firmware/config.txt; then
+			sed -i "s/\(.*i2c_baudrate=.*\)/#\1/" /rootfs/boot/firmware/config.txt
 		fi
-		if grep -q "i2c_arm_baudrate=" /rootfs/boot/config.txt; then
-			sed -i "s/\(.*i2c_arm_baudrate=.*\)/#\1/" /rootfs/boot/config.txt
+		if grep -q "i2c_arm_baudrate=" /rootfs/boot/firmware/config.txt; then
+			sed -i "s/\(.*i2c_arm_baudrate=.*\)/#\1/" /rootfs/boot/firmware/config.txt
 		fi
-		sed -i "s/^#\(dtparam=i2c_arm_baudrate=${i2c_baudrate}\)/\1/" /rootfs/boot/config.txt
-		if [ "$(grep -c "^dtparam=i2c_arm_baudrate=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-			sed -i "s/^\(dtparam=i2c_arm_baudrate=.*\)/#\1/" /rootfs/boot/config.txt
-			echo "dtparam=i2c_arm_baudrate=${i2c_baudrate}" >> /rootfs/boot/config.txt
+		sed -i "s/^#\(dtparam=i2c_arm_baudrate=${i2c_baudrate}\)/\1/" /rootfs/boot/firmware/config.txt
+		if [ "$(grep -c "^dtparam=i2c_arm_baudrate=.*" /rootfs/boot/firmware/config.txt)" -ne 1 ]; then
+			sed -i "s/^\(dtparam=i2c_arm_baudrate=.*\)/#\1/" /rootfs/boot/firmware/config.txt
+			echo "dtparam=i2c_arm_baudrate=${i2c_baudrate}" >> /rootfs/boot/firmware/config.txt
 		fi
 	fi
 fi
 
 # enable sound if specified in the configuration file
 if [ "${sound_enable}" = "1" ]; then
-	sed -i "s/^#\(dtparam=audio=on\)/\1/" /rootfs/boot/config.txt
-	if [ "$(grep -c "^dtparam=audio=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-		sed -i "s/^\(dtparam=audio=.*\)/#\1/" /rootfs/boot/config.txt
-		echo "dtparam=audio=on" >> /rootfs/boot/config.txt
+	sed -i "s/^#\(dtparam=audio=on\)/\1/" /rootfs/boot/firmware/config.txt
+	if [ "$(grep -c "^dtparam=audio=.*" /rootfs/boot/firmware/config.txt)" -ne 1 ]; then
+		sed -i "s/^\(dtparam=audio=.*\)/#\1/" /rootfs/boot/firmware/config.txt
+		echo "dtparam=audio=on" >> /rootfs/boot/firmware/config.txt
 	fi
 fi
 
@@ -2358,35 +2359,35 @@ if [ "${camera_enable}" = "1" ]; then
 	if [ "0${gpu_mem}" -lt "128" ]; then
 		gpu_mem=128
 	fi
-	sed -i "s/^#\(start_x=1\)/\1/" /rootfs/boot/config.txt
-	if [ "$(grep -c "^start_x=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-		sed -i "s/^\(start_x=.*\)/#\1/" /rootfs/boot/config.txt
-		echo "start_x=1" >> /rootfs/boot/config.txt
+	sed -i "s/^#\(start_x=1\)/\1/" /rootfs/boot/firmware/config.txt
+	if [ "$(grep -c "^start_x=.*" /rootfs/boot/firmware/config.txt)" -ne 1 ]; then
+		sed -i "s/^\(start_x=.*\)/#\1/" /rootfs/boot/firmware/config.txt
+		echo "start_x=1" >> /rootfs/boot/firmware/config.txt
 	fi
 	if [ "${camera_disable_led}" = "1" ]; then
-		sed -i "s/^#\(disable_camera_led=1\)/\1/" /rootfs/boot/config.txt
-		if [ "$(grep -c "^disable_camera_led=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-			sed -i "s/^\(disable_camera_led=.*\)/#\1/" /rootfs/boot/config.txt
-			echo "disable_camera_led=1" >> /rootfs/boot/config.txt
+		sed -i "s/^#\(disable_camera_led=1\)/\1/" /rootfs/boot/firmware/config.txt
+		if [ "$(grep -c "^disable_camera_led=.*" /rootfs/boot/firmware/config.txt)" -ne 1 ]; then
+			sed -i "s/^\(disable_camera_led=.*\)/#\1/" /rootfs/boot/firmware/config.txt
+			echo "disable_camera_led=1" >> /rootfs/boot/firmware/config.txt
 		fi
 	fi
 fi
 
 # set gpu_mem if specified in the configuration file
 if [ -n "${gpu_mem}" ]; then
-	sed -i "s/^#\(gpu_mem=${gpu_mem}\)/\1/" /rootfs/boot/config.txt
-	if [ "$(grep -c "^gpu_mem=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-		sed -i "s/^\(gpu_mem=.*\)/#\1/" /rootfs/boot/config.txt
-		echo "gpu_mem=${gpu_mem}" >> /rootfs/boot/config.txt
+	sed -i "s/^#\(gpu_mem=${gpu_mem}\)/\1/" /rootfs/boot/firmware/config.txt
+	if [ "$(grep -c "^gpu_mem=.*" /rootfs/boot/firmware/config.txt)" -ne 1 ]; then
+		sed -i "s/^\(gpu_mem=.*\)/#\1/" /rootfs/boot/firmware/config.txt
+		echo "gpu_mem=${gpu_mem}" >> /rootfs/boot/firmware/config.txt
 	fi
 fi
 
 # enable hardware watchdog and set up systemd to use it
 if [ "${watchdog_enable}" = "1" ]; then
-	sed -i "s/^#\(dtparam=watchdog=on\)/\1/" /rootfs/boot/config.txt
-	if [ "$(grep -c "^dtparam=watchdog=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-		sed -i "s/^\(dtparam=watchdog=.*\)/#\1/" /rootfs/boot/config.txt
-		echo "dtparam=watchdog=on" >> /rootfs/boot/config.txt
+	sed -i "s/^#\(dtparam=watchdog=on\)/\1/" /rootfs/boot/firmware/config.txt
+	if [ "$(grep -c "^dtparam=watchdog=.*" /rootfs/boot/firmware/config.txt)" -ne 1 ]; then
+		sed -i "s/^\(dtparam=watchdog=.*\)/#\1/" /rootfs/boot/firmware/config.txt
+		echo "dtparam=watchdog=on" >> /rootfs/boot/firmware/config.txt
 	fi
 	if [ "${init_system}" = "systemd" ]; then
 		sed -i 's/^.*RuntimeWatchdogSec=.*$/RuntimeWatchdogSec=14s/' /rootfs/etc/systemd/system.conf
@@ -2422,44 +2423,44 @@ fi
 
 # set hdmi options
 if [ "${hdmi_type}" = "tv" ] || [ "${hdmi_type}" = "monitor" ]; then
-	config_set "/rootfs/boot/config.txt" "hdmi_ignore_edid" "0xa5000080"
-	config_set "/rootfs/boot/config.txt" "hdmi_drive" "2"
+	config_set "/rootfs/boot/firmware/config.txt" "hdmi_ignore_edid" "0xa5000080"
+	config_set "/rootfs/boot/firmware/config.txt" "hdmi_drive" "2"
 	if [ "${hdmi_type}" = "tv" ]; then
-		config_set "/rootfs/boot/config.txt" "hdmi_group" "1"
+		config_set "/rootfs/boot/firmware/config.txt" "hdmi_group" "1"
 		if [ "${hdmi_tv_res}" = "720p" ]; then
 			#hdmi_mode=4 720p@60Hz
-			config_set "/rootfs/boot/config.txt" "hdmi_mode" "4"
+			config_set "/rootfs/boot/firmware/config.txt" "hdmi_mode" "4"
 		elif [ "${hdmi_tv_res}" = "1080i" ]; then
 			#hdmi_mode=5 1080i@60Hz
-			config_set "/rootfs/boot/config.txt" "hdmi_mode" "5"
+			config_set "/rootfs/boot/firmware/config.txt" "hdmi_mode" "5"
 		else
 			#hdmi_mode=16 1080p@60Hz
-			config_set "/rootfs/boot/config.txt" "hdmi_mode" "16"
+			config_set "/rootfs/boot/firmware/config.txt" "hdmi_mode" "16"
 		fi
 	elif [ "${hdmi_type}" = "monitor" ]; then
-		config_set "/rootfs/boot/config.txt" "hdmi_group" "2"
+		config_set "/rootfs/boot/firmware/config.txt" "hdmi_group" "2"
 		if [ "${hdmi_monitor_res}" = "640x480" ]; then
 			#hdmi_mode=4 640x480@60Hz
-			config_set "/rootfs/boot/config.txt" "hdmi_mode" "4"
+			config_set "/rootfs/boot/firmware/config.txt" "hdmi_mode" "4"
 		elif [ "${hdmi_monitor_res}" = "800x600" ]; then
 			#hdmi_mode=9 800x600@60Hz
-			config_set "/rootfs/boot/config.txt" "hdmi_mode" "9"
+			config_set "/rootfs/boot/firmware/config.txt" "hdmi_mode" "9"
 		elif [ "${hdmi_monitor_res}" = "1280x1024" ]; then
 			#hdmi_mode=35 1280x1024@60Hz
-			config_set "/rootfs/boot/config.txt" "hdmi_mode" "35"
+			config_set "/rootfs/boot/firmware/config.txt" "hdmi_mode" "35"
 		else
 			#hdmi_mode=16 1024x768@60Hz
-			config_set "/rootfs/boot/config.txt" "hdmi_mode" "16"
+			config_set "/rootfs/boot/firmware/config.txt" "hdmi_mode" "16"
 		fi
 	fi
 fi
 if [ "${hdmi_disable_overscan}" = "1" ]; then
-	config_set "/rootfs/boot/config.txt" "disable_overscan" "1"
+	config_set "/rootfs/boot/firmware/config.txt" "disable_overscan" "1"
 fi
 
 # enable rtc if specified in the configuration file
 if [ -n "${rtc}" ]; then
-	dtoverlay_enable "/rootfs/boot/config.txt" "i2c-rtc,${rtc}"
+	dtoverlay_enable "/rootfs/boot/firmware/config.txt" "i2c-rtc,${rtc}"
 	module_enable "rtc-${rtc}" "rtc"
 fi
 
@@ -2469,14 +2470,14 @@ if [ -n "${dt_overlays}" ]; then
 	convert_listvariable dt_overlays
 	for dtoverlay in ${dt_overlays}; do
 		echo "  ${dtoverlay}"
-		dtoverlay_enable "/rootfs/boot/config.txt" "${dtoverlay}"
+		dtoverlay_enable "/rootfs/boot/firmware/config.txt" "${dtoverlay}"
 	done
 	echo "OK"
 fi
 
 # disable splash if specified in the configuration file
 if [ "${disable_splash}" = "1" ]; then
-	config_set "/rootfs/boot/config.txt" "disable_splash" "1"
+	config_set "/rootfs/boot/firmware/config.txt" "disable_splash" "1"
 fi
 
 if [ "${sound_enable}" = "1" ] && [ "${sound_usb_enable}" = "1" ] && [ "${sound_usb_first}" = "1" ]; then
@@ -2492,12 +2493,12 @@ fi
 
 # set mmc1 (USB) as default trigger for activity led
 if [ "${usbroot}" = "1" ]; then
-	dtoverlay_enable "/rootfs/boot/config.txt" "act_led_trigger" "mmc1"
+	dtoverlay_enable "/rootfs/boot/firmware/config.txt" "act_led_trigger" "mmc1"
 fi
 
 # iterate through all the file lists and call the install_files method for them
 old_dir=$(pwd)
-cd /rootfs/boot/raspberrypi-ua-netinst/config/files/ || fail
+cd /rootfs/boot/firmware/raspberrypi-ua-netinst/config/files/ || fail
 for listfile in ./*.list
 do
 	if [ -e "${listfile}" ]; then
@@ -2507,11 +2508,11 @@ done
 cd "${old_dir}" || fail
 
 # run post install script if exists
-if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt" ]; then
+if [ -e "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/post-install.txt" ]; then
 	echo "================================================="
 	echo "=== Start executing post-install.txt. ==="
-	inputfile_sanitize /rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt
-	source /rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt
+	inputfile_sanitize /rootfs/boot/firmware/raspberrypi-ua-netinst/config/post-install.txt
+	source /rootfs/boot/firmware/raspberrypi-ua-netinst/config/post-install.txt
 	echo "=== Finished executing post-install.txt. ==="
 	echo "================================================="
 fi
@@ -2547,7 +2548,7 @@ echo "Printing console to telnet output stopped."
 
 # copy logfile to standard log directory
 if [ "${cleanup_logfiles}" = "1" ]; then
-	rm -f /rootfs/boot/raspberrypi-ua-netinst/error-*.log
+	rm -f /rootfs/boot/firmware/raspberrypi-ua-netinst/error-*.log
 else
 	sleep 1
 	# root, user and wifi passwords are deleted from logfile before it is written to the filesystem
@@ -2557,7 +2558,7 @@ fi
 
 # remove clear text wifi password from installer config
 if [ -n "${wlan_psk}" ]; then
-	sed -i "s/wlan_psk=.*/wlan_psk_encrypted=${wlan_psk_encrypted}/" "/rootfs/boot/raspberrypi-ua-netinst/config/installer-config.txt"
+	sed -i "s/wlan_psk=.*/wlan_psk_encrypted=${wlan_psk_encrypted}/" "/rootfs/boot/firmware/raspberrypi-ua-netinst/config/installer-config.txt"
 fi
 
 # Cleanup installer files
@@ -2568,7 +2569,7 @@ if [ -e "${installer_swapfile}" ]; then
 fi
 if [ "${cleanup}" = "1" ]; then
 	echo -n "Removing installer files... "
-	rm -rf /rootfs/boot/raspberrypi-ua-netinst/
+	rm -rf /rootfs/boot/firmware/raspberrypi-ua-netinst/
 	echo "OK"
 fi
 
@@ -2584,7 +2585,7 @@ if [ "${final_action}" != "console" ]; then
 		umount "/rootfs${sysfolder}"
 	done
 	sync
-	umount /rootfs/boot
+	umount /rootfs/boot/firmware
 	umount /rootfs
 	echo "OK"
 fi
