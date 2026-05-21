@@ -329,25 +329,6 @@ download_packages() {
 	fi
 }
 
-download_remote_file() {
-	if [ "${4}" != "" ]; then
-		echo -e "\nDownloading '${4}'..."
-	else
-		echo -e "\nDownloading '${2}'..."
-	fi
-	download_file "${1}${2}" "${2}_tmp"
-	if [ "${3}" != "" ]; then
-		if [[ "${2}" =~ .*\.tar\..* ]]; then
-			${3} "${2}_tmp" | tar -x "${4}"
-		else
-			${3} "${2}_tmp"
-		fi
-		rm "${2}_tmp"
-	else
-		mv "${2}_tmp" "${2}"
-	fi
-}
-
 # Read config
 if [ -r ./build.conf ]; then
 	source <(tr -d "\015" < ./build.conf)
@@ -406,7 +387,7 @@ fi
 	## Download default /boot/config.txt and do default changes
 	mkdir -p initramfs/boot
 	cd initramfs/boot || exit 1
-	download_remote_file https://downloads.raspberrypi.org/raspios_armhf/ "boot.tar.xz" xzcat ./config.txt
+	download_file https://raw.githubusercontent.com/RPi-Distro/pi-gen/master/stage1/00-boot-files/files/config.txt
 	sed -i "s/^\(dtparam=audio=on\)/#\1/" config.txt # disable audio
 	{
 		echo ""
