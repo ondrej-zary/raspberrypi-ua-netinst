@@ -1007,36 +1007,26 @@ PRE_NETWORK_DURATION=$(date +%s)
 
 date_set=false
 if [ "${date_set}" = "false" ]; then
-	# set time with ntpdate
-	echo -n "Set time using ntpdate... "
-	if ntpdate-debian -b &> /dev/null; then
-		echo "OK"
-		date_set=true
-	fi
-
-	if [ "${date_set}" = "false" ]; then
-		echo "Failed to set time via ntpdate. Switched to rdate."
-		# failed to set time with ntpdate, fall back to rdate
-		# time server addresses taken from http://tf.nist.gov/tf-cgi/servers.cgi
-		timeservers="${timeserver}"
-		timeservers="${timeservers} time.nist.gov nist1.symmetricom.com"
-		timeservers="${timeservers} nist-time-server.eoni.com utcnist.colorado.edu"
-		timeservers="${timeservers} nist1-pa.ustiming.org nist.expertsmi.com"
-		timeservers="${timeservers} nist1-macon.macon.ga.us wolfnisttime.com"
-		timeservers="${timeservers} nist.time.nosc.us nist.netservicesgroup.com"
-		timeservers="${timeservers} nisttime.carsoncity.k12.mi.us nist1-lnk.binary.net"
-		timeservers="${timeservers} ntp-nist.ldsbc.edu utcnist2.colorado.edu"
-		timeservers="${timeservers} nist1-ny2.ustiming.org wwv.nist.gov"
-		echo -n "Set time using timeserver "
-		for ts in ${timeservers}; do
-			echo -n "'${ts}'... "
-			if rdate "${ts}" &> /dev/null; then
-				echo "OK"
-				date_set=true
-				break
-			fi
-		done
-	fi
+	echo -n "Set time using rdate... "
+	# time server addresses taken from http://tf.nist.gov/tf-cgi/servers.cgi
+	timeservers="${timeserver}"
+	timeservers="${timeservers} time.nist.gov nist1.symmetricom.com"
+	timeservers="${timeservers} nist-time-server.eoni.com utcnist.colorado.edu"
+	timeservers="${timeservers} nist1-pa.ustiming.org nist.expertsmi.com"
+	timeservers="${timeservers} nist1-macon.macon.ga.us wolfnisttime.com"
+	timeservers="${timeservers} nist.time.nosc.us nist.netservicesgroup.com"
+	timeservers="${timeservers} nisttime.carsoncity.k12.mi.us nist1-lnk.binary.net"
+	timeservers="${timeservers} ntp-nist.ldsbc.edu utcnist2.colorado.edu"
+	timeservers="${timeservers} nist1-ny2.ustiming.org wwv.nist.gov"
+	echo -n "Set time using timeserver "
+	for ts in ${timeservers}; do
+		echo -n "'${ts}'... "
+		if rdate "${ts}" &> /dev/null; then
+			echo "OK"
+			date_set=true
+			break
+		fi
+	done
 
 	if [ "${date_set}" = "false" ]; then
 		echo "Failed to set time via rdate. Switched to HTTP."
