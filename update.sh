@@ -9,6 +9,8 @@ ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;archive-key-11.asc;1F89983E00
 ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;release-11.asc;A4285295FC7B1A81600062A9605C66F00D6C9793")
 ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;archive-key-12.asc;B8B80B5B623EAB6AD8775C45B7C5D7D6350947F8")
 ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;release-12.asc;4D64FEC119C2029067D6E791F8D2585B8783D481")
+ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;archive-key-13.asc;04B54C3CDCA79751B16BC6B5225629DF75B188BD")
+ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;release-13.asc;41587F7DB8C774BCCF131416762F67A0B2C39DE4")
 
 mirror_raspbian=http://mirrordirector.raspbian.org/raspbian
 mirror_raspberrypi=http://archive.raspberrypi.org/debian
