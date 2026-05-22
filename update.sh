@@ -18,7 +18,7 @@ mirror_debian=http://deb.debian.org/debian
 declare mirror_raspbian_cache
 declare mirror_raspberrypi_cache
 declare mirror_debian_cache
-release=bookworm
+release=trixie
 
 packages=()
 
