@@ -881,8 +881,6 @@ if [ ! -e "/lib/modules/$(uname -r)" ]; then
 	echo "Kernel modules for the kernel version \"$(uname -r)\" could not be found. Searching for alternatives..."
 	if [[ "$(uname -r)" =~ -v7\+$ ]]; then
 		kernel_modulepath="$(find /lib/modules/ -maxdepth 1 -type d ! -path /lib/modules/ | grep -e "[^/]\+-v7+$" | head -1)"
-	elif [[ "$(uname -r)" =~ -v7l\+$ ]]; then
-		kernel_modulepath="$(find /lib/modules/ -maxdepth 1 -type d ! -path /lib/modules/ | grep -e "[^/]\+-v7l+$" | head -1)"
 	else
 		kernel_modulepath="$(find /lib/modules/ -maxdepth 1 -type d ! -path /lib/modules/ | grep -ve "[^/]\+-v7+$" | head -1)"
 	fi
@@ -1207,9 +1205,6 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	# v8 kernel is for everything running in 64-bit mode
 	if [ "${arch}" = "arm64" ]; then
 		kernel_type="v8"
-	# v7l kernel is for 4 and 400
-	elif [ "${rpi_hardware:0:1}" = "4" ]; then
-		kernel_type="v7l"
 	# v6 kernel is for everything armv6l-based
 	elif [ "$(uname -m)" = "armv6l" ]; then
 		kernel_type="v6"
