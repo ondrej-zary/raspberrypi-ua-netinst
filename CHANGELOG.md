@@ -1,5 +1,18 @@
 # Changelog
 
+## raspberrypi-ua-netinst v2.6.0
+
+- support for Debian 12 (bookworm)
+  - boot partition is mounted on /boot/firmware, not /boot
+  - kernel is installed using linux-image-rpi-v* packages
+- added or changed configuration variables:
+  - `release` is set to "bookworm" by default
+- USB-only install possible without manual configuration
+
+**Bugfixes:**
+
+- upgrade initial packages
+
 ## raspberrypi-ua-netinst v2.5.0
 
 - support for Debian 11 (bullseye)
