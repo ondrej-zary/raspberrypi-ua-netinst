@@ -624,6 +624,12 @@ until [ -n "${bootdev}" ]; do
 	if [ -z "${bootdev}" ]; then sleep 1s; fi
 done
 
+# Assume USB boot and root if there's no SD card and boot device is an USB drive
+if [ ! -e "/dev/mmcblk0" -a "${bootdev}" = "/dev/sda" ]; then
+	usbboot=1
+	usbroot=1
+fi
+
 # Check if there's an alternative rcS file and excute it
 # instead of this file. Only do this if this isn't the
 # alternative script already
