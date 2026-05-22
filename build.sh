@@ -163,7 +163,6 @@ function create_cpio {
 	mkdir -p rootfs/usr/sbin/
 	mkdir -p rootfs/usr/share/{dpkg,keyrings,libc-bin}
 	mkdir -p rootfs/var/lib/dpkg/{alternatives,info,parts,updates}
-	mkdir -p rootfs/var/lib/ntpdate
 	mkdir -p rootfs/var/log/
 	mkdir -p rootfs/var/run/
 
@@ -256,6 +255,8 @@ function create_cpio {
 	cp_executable tmp/bin/busybox rootfs/bin
 	cd rootfs && ln -s bin/busybox init; cd ..
 	echo "\$MODALIAS=.* 0:0 660 @/opt/busybox/bin/modprobe \"\$MODALIAS\"" > rootfs/etc/mdev.conf
+	# some devices in /dev must have 666 permissions
+	echo "(full|null|ptmx|random|tty|urandom|zero) 0:0 666" >> rootfs/etc/mdev.conf
 
 	# bash-static components
 	cp --preserve=xattr,timestamps tmp/bin/bash-static rootfs/bin
@@ -309,7 +310,7 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/etc/cron.daily/dpkg rootfs/etc/cron.daily/
 	cp --preserve=xattr,timestamps tmp/etc/dpkg/dpkg.cfg rootfs/etc/dpkg/
 	cp --preserve=xattr,timestamps tmp/etc/logrotate.d/dpkg rootfs/etc/logrotate.d/
-	cp_executable tmp/sbin/start-stop-daemon rootfs/sbin/
+	cp_executable tmp/usr/sbin/start-stop-daemon rootfs/usr/sbin/
 	cp_executable tmp/usr/bin/dpkg rootfs/usr/bin/
 	cp_executable tmp/usr/bin/dpkg-deb rootfs/usr/bin/
 	cp_executable tmp/usr/bin/dpkg-divert rootfs/usr/bin/
@@ -356,7 +357,7 @@ function create_cpio {
 	# iproute2 components
 	cp_executable tmp/bin/ip rootfs/bin/
 
-	# lsb-base components
+	# sysvinit-utils (previously lsb-base) components
 	cp --preserve=xattr,timestamps tmp/lib/lsb/init-functions rootfs/lib/lsb/
 	cp --preserve=xattr,timestamps tmp/lib/lsb/init-functions.d/00-verbose rootfs/lib/lsb/init-functions.d/
 
@@ -368,11 +369,8 @@ function create_cpio {
 	# netcat-openbsd
 	cp_executable tmp/bin/nc.openbsd rootfs/bin/nc
 
-	# ntpdate components
-	cp --preserve=xattr,timestamps tmp/etc/default/ntpdate rootfs/etc/default/
-	sed -i s/NTPDATE_USE_NTP_CONF=yes/NTPDATE_USE_NTP_CONF=no/ rootfs/etc/default/ntpdate
-	cp_executable tmp/usr/sbin/ntpdate rootfs/usr/sbin/
-	cp_executable tmp/usr/sbin/ntpdate-debian rootfs/usr/sbin/
+	# rdate
+	cp_executable tmp/usr/sbin/rdate rootfs/usr/sbin/
 
 	# raspberrypi.org GPG key
 	cp --preserve=xattr,timestamps ../"${packages_dir}"/raspberrypi.gpg.key rootfs/usr/share/keyrings/
@@ -440,13 +438,10 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/lib/firmware/regulatory.db-debian rootfs/lib/firmware/regulatory.db
 	cp --preserve=xattr,timestamps tmp/lib/firmware/regulatory.db.p7s-debian rootfs/lib/firmware/regulatory.db.p7s
 
-	# vcgencmd
-	## libraspberrypi-bin
-	mkdir -p rootfs/usr/bin
+	# vcgencmd (raspi-utils-core)
 	cp_executable tmp/usr/bin/vcgencmd rootfs/usr/bin/
 
 	# xxd
-	mkdir -p rootfs/usr/bin
 	cp_executable tmp/usr/bin/xxd rootfs/usr/bin/
 
 	# install additional resources
@@ -462,6 +457,11 @@ function create_cpio {
 	for lib in "${libs_to_copy[@]}"; do
 		cp --preserve=xattr,timestamps "${lib}" "$(echo "${lib}" | sed -e 's/^tmp\//rootfs\//')"
 	done
+
+	# if /lib/ld-linux-armhf.so.3 is not present, create it as a symlink
+	if [ ! -e rootfs/lib/ld-linux-armhf.so.3 ]; then
+		ln -s arm-linux-gnueabihf/ld-linux-armhf.so.3 rootfs/lib/ld-linux-armhf.so.3
+	fi
 
 	INITRAMFS="../raspberrypi-ua-netinst.cpio.gz"
 	(cd rootfs && find . | cpio -H newc -ov | gzip --best > $INITRAMFS)
@@ -493,10 +493,16 @@ rm -rf bootfs
 mkdir -p bootfs/raspberrypi-ua-netinst
 
 # raspberrypi-bootloader components and kernel
-cp --preserve=xattr,timestamps -r tmp/boot/* bootfs/
-mv bootfs/kernel*.img bootfs/raspberrypi-ua-netinst/
-mv bootfs/*.dtb bootfs/raspberrypi-ua-netinst/
-mv bootfs/overlays bootfs/raspberrypi-ua-netinst/
+cp --preserve=xattr,timestamps -r tmp/usr/lib/raspi-firmware/* bootfs/
+cp --preserve=xattr,timestamps tmp/boot/vmlinuz-*-v6 bootfs/raspberrypi-ua-netinst/kernel.img
+cp --preserve=xattr,timestamps tmp/boot/vmlinuz-*-v7 bootfs/raspberrypi-ua-netinst/kernel7.img
+cp --preserve=xattr,timestamps tmp/boot/vmlinuz-*-v7l bootfs/raspberrypi-ua-netinst/kernel7l.img
+cp --preserve=xattr,timestamps tmp/boot/vmlinuz-*-v8 bootfs/raspberrypi-ua-netinst/kernel8.img
+# *.dtb are the same v6,v7 and v7l kernels but there are additional ones in v8 kernel
+cp --preserve=xattr,timestamps tmp/usr/lib/linux-image-*-v6/*.dtb bootfs/raspberrypi-ua-netinst/
+cp --preserve=xattr,timestamps tmp/usr/lib/linux-image-*-v8/broadcom/*.dtb bootfs/raspberrypi-ua-netinst/
+# overlays are the same in all kernels, copy any of them
+cp --preserve=xattr,timestamps -r tmp/usr/lib/linux-image-*-v6/overlays bootfs/raspberrypi-ua-netinst/
 
 if [ ! -f bootfs/config.txt ] ; then
 	touch bootfs/config.txt

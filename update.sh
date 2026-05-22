@@ -5,9 +5,12 @@
 ARCHIVE_KEYS=()
 ARCHIVE_KEYS+=("https://archive.raspbian.org;raspbian.public.key;A0DA38D0D76E8B5D638872819165938D90FDDD2E")
 ARCHIVE_KEYS+=("https://archive.raspberrypi.org/debian;raspberrypi.gpg.key;CF8A1AF502A2AA2D763BAE7E82B129927FA3303E")
-ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;archive-key-10.asc;80D15823B7FD1561F9F7BCDDDC30D7C23CBBABEE")
 ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;archive-key-11.asc;1F89983E0081FDE018F3CC9673A4F27B8DD47936")
 ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;release-11.asc;A4285295FC7B1A81600062A9605C66F00D6C9793")
+ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;archive-key-12.asc;B8B80B5B623EAB6AD8775C45B7C5D7D6350947F8")
+ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;release-12.asc;4D64FEC119C2029067D6E791F8D2585B8783D481")
+ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;archive-key-13.asc;04B54C3CDCA79751B16BC6B5225629DF75B188BD")
+ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;release-13.asc;41587F7DB8C774BCCF131416762F67A0B2C39DE4")
 
 mirror_raspbian=http://mirrordirector.raspbian.org/raspbian
 mirror_raspberrypi=http://archive.raspberrypi.org/debian
@@ -15,13 +18,16 @@ mirror_debian=http://deb.debian.org/debian
 declare mirror_raspbian_cache
 declare mirror_raspberrypi_cache
 declare mirror_debian_cache
-release=bullseye
+release=bookworm
 
 packages=()
 
 # programs
-packages+=("raspberrypi-bootloader")
-packages+=("raspberrypi-kernel")
+packages+=("raspi-firmware")
+packages+=("linux-image-rpi-v6")
+packages+=("linux-image-rpi-v7")
+packages+=("linux-image-rpi-v7l")
+packages+=("linux-image-rpi-v8")
 packages+=("firmware-brcm80211")
 packages+=("wireless-regdb")
 packages+=("btrfs-progs")
@@ -38,10 +44,10 @@ packages+=("f2fs-tools")
 packages+=("gpgv")
 packages+=("ifupdown")
 packages+=("iproute2")
-packages+=("lsb-base")
+packages+=("sysvinit-utils")
 packages+=("netbase")
 packages+=("netcat-openbsd")
-packages+=("ntpdate")
+packages+=("rdate")
 packages+=("raspbian-archive-keyring")
 packages+=("debian-archive-keyring")
 packages+=("rng-tools5")
@@ -49,7 +55,7 @@ packages+=("tar")
 packages+=("fdisk")
 packages+=("util-linux")
 packages+=("wpasupplicant")
-packages+=("libraspberrypi-bin")
+packages+=("raspi-utils-core")
 packages+=("xxd")
 packages+=("curl")
 packages+=("logsave")
@@ -188,22 +194,22 @@ download_package_list() {
 	for extension in "${extensions[@]}"; do
 
 		# Check that this extension is available
-		if grep -q "${package_section}/binary-armhf/Packages${extension}" "${1}_Release"; then
+		if grep -q "${package_section}/binary-${3}/Packages${extension}" "${1}_Release"; then
 
 			# Download Packages file
 			echo -e "\nDownloading ${package_section} package list..."
-			if ! download_file "${2}/dists/$release/$package_section/binary-armhf/Packages${extension}" "tmp${extension}"; then
+			if ! download_file "${2}/dists/$release/$package_section/binary-${3}/Packages${extension}" "tmp${extension}"; then
 				echo -e "ERROR\nDownloading '${package_section}' package list failed! Exiting."
 				cd ..
 				exit 1
 			fi
 
-			# Verify the checksum of the Packages file, assuming that the last checksums in the Release file are SHA256 sums
+			# Verify the SHA256 checksum of the Packages file
 			echo -n "Verifying ${package_section} package list... "
-			if [ "$(grep "${package_section}/binary-armhf/Packages${extension}" "${1}_Release" | tail -n1 | awk '{print $1}')" = "$(sha256sum "tmp${extension}" | awk '{print $1}')" ]; then
+			if [ "$(sed '1,/^SHA256:$/d' "${1}_Release" | grep "${package_section}/binary-${3}/Packages${extension}" | head -n1 | awk '{print $1}')" = "$(sha256sum "tmp${extension}" | awk '{print $1}')" ]; then
 				echo "OK"
 			else
-				echo -e "ERROR\nThe checksum of file '${package_section}/binary-armhf/Packages${extension}' doesn't match!"
+				echo -e "ERROR\nThe checksum of file '${package_section}/binary-${3}/Packages${extension}' doesn't match!"
 				cd ..
 				exit 1
 			fi
@@ -218,7 +224,7 @@ download_package_list() {
 			elif [ "${extension}" = "" ]; then
 				decompressor="cat "
 			fi
-			${decompressor} "tmp${extension}" >> "${1}_Packages"
+			${decompressor} "tmp${extension}" >> "${1}-${3}_Packages"
 			rm "tmp${extension}"
 			break
 		fi
@@ -239,17 +245,22 @@ download_package_lists() {
 	fi
 
 	echo -n > "${1}_Packages"
-	package_section=firmware
-	download_package_list "${1}" "${2}"
+	if [ "${1}" != "debian" ]; then
+		package_section=firmware
+		download_package_list "${1}" "${2}" "${3}"
+	else
+		package_section=non-free-firmware
+		download_package_list "${1}" "${2}" "${3}"
+	fi
 	package_section=main
-	download_package_list "${1}" "${2}"
+	download_package_list "${1}" "${2}" "${3}"
 	package_section=non-free
-	download_package_list "${1}" "${2}"
+	download_package_list "${1}" "${2}" "${3}"
 }
 
 add_packages() {
 	echo -e "\nAdding required packages..."
-	filter_package_list < "${1}_Packages" >"${1}_Packages.tmp"
+	filter_package_list < "${1}-${3}_Packages" >"${1}-${3}_Packages.tmp"
 	while true; do
 		libs=()
 		for pkg in "${packages[@]}"; do
@@ -272,7 +283,7 @@ add_packages() {
 				elif [ "${k}" = "" ]; then
 					break
 				fi
-			done < <(grep -A 4 -m 1 ^Package:\ "$pkg"$ "${1}_Packages.tmp")
+			done < <(grep -A 4 -m 1 ^Package:\ "$pkg"$ "${1}-${3}_Packages.tmp")
 			if [ -z "${current_package}" ]; then # package not found
 				continue
 			fi
@@ -281,7 +292,7 @@ add_packages() {
 			packages_debs+=("${2}/${current_filename}")
 			packages_sha256+=("${current_sha256}  $(basename "${current_filename}")")
 			packages_done+=("${current_package}")
-			while IFS='' read -r line; do libs+=("$line"); done < <(printf '%s\n' "${current_depends[@]}" | grep "lib")
+			while IFS='' read -r line; do libs+=("$line"); done < <(printf '%s\n' "${current_depends[@]}" | grep -E "lib|linux-image")
 		done
 		# remove duplicate libs
 		mapfile -t libs < <(printf '%s\n' "${libs[@]}" | sort | uniq)
@@ -318,25 +329,6 @@ download_packages() {
 	fi
 }
 
-download_remote_file() {
-	if [ "${4}" != "" ]; then
-		echo -e "\nDownloading '${4}'..."
-	else
-		echo -e "\nDownloading '${2}'..."
-	fi
-	download_file "${1}${2}" "${2}_tmp"
-	if [ "${3}" != "" ]; then
-		if [[ "${2}" =~ .*\.tar\..* ]]; then
-			${3} "${2}_tmp" | tar -x "${4}"
-		else
-			${3} "${2}_tmp"
-		fi
-		rm "${2}_tmp"
-	else
-		mv "${2}_tmp" "${2}"
-	fi
-}
-
 # Read config
 if [ -r ./build.conf ]; then
 	source <(tr -d "\015" < ./build.conf)
@@ -365,17 +357,19 @@ fi
 	fi
 
 	## Download package list
-	download_package_lists raspberry "${mirror_raspberrypi}"
-	download_package_lists raspbian "${mirror_raspbian}"
-	download_package_lists debian "${mirror_debian}"
+	download_package_lists raspberry "${mirror_raspberrypi}" armhf
+	download_package_lists raspberry "${mirror_raspberrypi}" arm64
+	download_package_lists raspbian "${mirror_raspbian}" armhf
+	download_package_lists debian "${mirror_debian}" armhf
 
 	## Select packages for download
 	packages_debs=()
 	packages_sha256=()
 
-	add_packages raspberry "${mirror_raspberrypi}"
-	add_packages raspbian "${mirror_raspbian}"
-	add_packages debian "${mirror_debian}"
+	add_packages raspberry "${mirror_raspberrypi}" armhf
+	add_packages raspbian "${mirror_raspbian}" armhf
+	add_packages debian "${mirror_debian}" armhf
+	add_packages raspberry "${mirror_raspberrypi}" arm64
 	if ! allfound; then
 		echo "ERROR: Unable to find all required packages in package list!"
 		echo "Missing packages: '${packages[*]}'"
@@ -393,7 +387,7 @@ fi
 	## Download default /boot/config.txt and do default changes
 	mkdir -p initramfs/boot
 	cd initramfs/boot || exit 1
-	download_remote_file https://downloads.raspberrypi.org/raspios_armhf/ "boot.tar.xz" xzcat ./config.txt
+	download_file https://raw.githubusercontent.com/RPi-Distro/pi-gen/master/stage1/00-boot-files/files/config.txt
 	sed -i "s/^\(dtparam=audio=on\)/#\1/" config.txt # disable audio
 	{
 		echo ""
