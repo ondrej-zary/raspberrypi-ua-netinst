@@ -26,8 +26,11 @@ else
 	zipfile="raspberrypi-ua-netinst-$(date +%Y%m%d).zip"
 fi
 
-INSTALL_MODULES+=("kernel/fs/btrfs/btrfs.ko")
-INSTALL_MODULES+=("kernel/drivers/scsi/sg.ko")
+INSTALL_MODULES+=("kernel/fs/btrfs/btrfs.ko.xz")
+INSTALL_MODULES+=("kernel/drivers/scsi/sg.ko.xz")
+INSTALL_MODULES+=("kernel/drivers/i2c/busses/i2c-bcm2708.ko.xz")
+INSTALL_MODULES+=("kernel/drivers/i2c/busses/i2c-bcm2835.ko.xz")
+INSTALL_MODULES+=("kernel/drivers/hwmon/raspberrypi-hwmon.ko.xz")
 
 # defines array with kernel versions
 function get_kernels {
@@ -36,13 +39,6 @@ function get_kernels {
 	kernels=()
 	for i in "${moduleconf[@]}"; do
 		kernels+=("$(dirname "${i/tmp\/lib\/modules\//}")")
-	done
-}
-
-# copies files replacing "kernel*" with kernel versions in path
-function cp_kernelfiles {
-	for kernel in "${kernels[@]}"; do
-		eval cp --preserve=xattr,timestamps -r "${1//kernel\*/${kernel}}" "${2//kernel\*/${kernel}}" || true
 	done
 }
 
@@ -182,6 +178,18 @@ function create_cpio {
 
 	modules=("${INSTALL_MODULES[@]}")
 
+	# add network and rtc drivers
+	modules+=($(find tmp/lib/modules/${kernels[0]}/kernel/net/ipv6 \
+			 tmp/lib/modules/${kernels[0]}/kernel/net/mac80211 \
+			 tmp/lib/modules/${kernels[0]}/kernel/net/rfkill \
+			 tmp/lib/modules/${kernels[0]}/kernel/net/wireless \
+			 tmp/lib/modules/${kernels[0]}/kernel/drivers/net/ethernet \
+			 tmp/lib/modules/${kernels[0]}/kernel/drivers/net/phy \
+			 tmp/lib/modules/${kernels[0]}/kernel/drivers/net/usb \
+			 tmp/lib/modules/${kernels[0]}/kernel/drivers/net/wireless \
+			 tmp/lib/modules/${kernels[0]}/kernel/drivers/rtc \
+			 -name \*.ko.xz | cut -d/ -f 5- | tr '\n' ' '))
+
 	# new_count contains the number of new elements in the $modules array for each iteration
 	new_count=${#modules[@]}
 	# repeat the hunt for dependencies until no new ones are found (the loop takes care
@@ -206,35 +214,6 @@ function create_cpio {
 			fi
 		done
 	done
-
-	# copy network drivers
-	for kernel in "${kernels[@]}"; do
-		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers/net"
-		mkdir -p "rootfs/lib/modules/${kernel}/kernel/net"
-	done
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/ipv6 rootfs/lib/modules/kernel*/kernel/net/
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/mac80211 rootfs/lib/modules/kernel*/kernel/net/
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/rfkill rootfs/lib/modules/kernel*/kernel/net/
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/wireless rootfs/lib/modules/kernel*/kernel/net/
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/ethernet rootfs/lib/modules/kernel*/kernel/net/
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/phy rootfs/lib/modules/kernel*/kernel/net/
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/usb rootfs/lib/modules/kernel*/kernel/drivers/net/
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/wireless rootfs/lib/modules/kernel*/kernel/drivers/net/
-
-	# copy i2c drivers
-	for kernel in "${kernels[@]}"; do
-		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers/i2c/busses"
-	done
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/i2c/busses/i2c-bcm2708.ko* rootfs/lib/modules/kernel*/kernel/drivers/i2c/busses/
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/i2c/busses/i2c-bcm2835.ko* rootfs/lib/modules/kernel*/kernel/drivers/i2c/busses/
-
-	# copy rtc drivers
-	for kernel in "${kernels[@]}"; do
-		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers"
-		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers/hwmon"
-	done
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/rtc rootfs/lib/modules/kernel*/kernel/drivers/
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/hwmon/raspberrypi-hwmon.ko* rootfs/lib/modules/kernel*/kernel/drivers/hwmon/
 
 	# create dependency lists
 	for kernel in "${kernels[@]}"; do
