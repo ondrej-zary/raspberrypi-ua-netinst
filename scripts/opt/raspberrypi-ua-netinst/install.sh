@@ -1223,7 +1223,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
 
 	# minimal
-	minimal_packages="cpufrequtils,openssh-server,dosfstools"
+	minimal_packages="linux-cpupower,openssh-server,dosfstools"
 	if [ "${init_system}" != "systemd" ] || [ "${use_systemd_services}" = "0" ]; then
 		minimal_packages="${minimal_packages},chrony"
 		if [ -z "${rtc}" ]; then
