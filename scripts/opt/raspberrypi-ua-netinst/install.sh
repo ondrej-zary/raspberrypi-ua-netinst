@@ -1225,7 +1225,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	# minimal
 	minimal_packages="cpufrequtils,openssh-server,dosfstools"
 	if [ "${init_system}" != "systemd" ] || [ "${use_systemd_services}" = "0" ]; then
-		minimal_packages="${minimal_packages},ntp"
+		minimal_packages="${minimal_packages},chrony"
 		if [ -z "${rtc}" ]; then
 			minimal_packages="${minimal_packages},fake-hwclock"
 		fi
