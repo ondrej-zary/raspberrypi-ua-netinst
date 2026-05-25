@@ -477,11 +477,15 @@ fi
 # Prepare
 rm -rf ${build_dir} && mkdir -p ${build_dir} && cd ${build_dir}
 rm -rf tmp && mkdir tmp
+# usrmerge
+ln -s usr/bin tmp/bin
+ln -s usr/lib tmp/lib
+ln -s usr/sbin tmp/sbin
 
 # extract debs
 echo "Extracting packages..."
 for i in ../packages/*.deb; do
-	cd tmp && ar x "../${i}" && tar -xf data.tar.*; rm -f data.tar.* control.tar.* debian-binary; cd ..
+	cd tmp && ar x "../${i}" && tar --keep-directory-symlink -xf data.tar.*; rm -f data.tar.* control.tar.* debian-binary; cd ..
 done
 
 echo "Preparing data and creating cpio..."
