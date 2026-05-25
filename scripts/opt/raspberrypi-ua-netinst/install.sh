@@ -156,7 +156,7 @@ variables_set_defaults() {
 	else
 		variable_set "mirror" "http://mirrordirector.raspbian.org/raspbian/"
 	fi
-	variable_set "release" "bookworm"
+	variable_set "release" "trixie"
 	variable_set "hostname" "pi"
 	variable_set "rootpw" "raspbian"
 	variable_set "root_ssh_pwlogin" "1"
@@ -1147,7 +1147,7 @@ fi
 
 # determine available releases
 mirror_base=http://archive.raspberrypi.org/debian/dists/
-release_fallback=bookworm
+release_fallback=trixie
 release_base="${release}"
 release_raspbian="${release}"
 if ! wget --spider "${mirror_base}/${release}/" &> /dev/null; then
