@@ -143,7 +143,14 @@ variables_set_defaults() {
 
 	# set config defaults
 	variable_set "preset" "server"
-	variable_set "arch" "armhf"
+	if [ -z "${arch}" ]; then
+		if [ "$(uname -m)" = "aarch64" ]; then
+			arch="arm64"
+		else
+			arch="armhf"
+		fi
+		echo "arch set automatically to ${arch}"
+	fi
 	if [ "${arch}" = "arm64" ]; then
 		variable_set "mirror" "http://deb.debian.org/debian/"
 	else
