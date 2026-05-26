@@ -28,7 +28,7 @@
 
 | Preset | Packages |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `base` | _\<essential\>,apt,kmod_ |
+| `base` | _\<essential\>,login,apt,kmod_ |
 | `minimal` | _\<base\>,linux-cpupower,fake-hwclock,ifupdown,net-tools,chrony,openssh-server,dosfstools,raspberrypi-sys-mods_ |
 | `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills (raspi-copies-and-fills is not available on arm64)_ |
 
@@ -38,7 +38,7 @@ Note that if the networking configuration is set to use DHCP, `isc-dhcp-client` 
 
 | Preset | Packages |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `base` | _\<essential\>,apt,kmod_ |
+| `base` | _\<essential\>,login,apt,kmod_ |
 | `minimal` | _\<base\>,linux-cpupower,iproute2,openssh-server,dosfstools,raspberrypi-sys-mods_ |
 | `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills (raspi-copies-and-fills is not available on arm64)_ |
 

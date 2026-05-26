@@ -1196,7 +1196,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	fi
 
 	# base
-	base_packages="kmod"
+	base_packages="login,kmod"
 	base_packages="${custom_packages},${base_packages}"
 	if [ "${init_system}" = "systemd" ]; then
 		base_packages="${base_packages},libpam-systemd"
