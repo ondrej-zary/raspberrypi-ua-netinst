@@ -1,5 +1,19 @@
 # Changelog
 
+## raspberrypi-ua-netinst v2.7.0
+
+- support for Debian 13 (trixie)
+  - the v7l kernel was removed so it's not possible to run Raspberry 4 in 32-bit mode
+  - apt-key was removed so it's not possible to add repository keys in ".key" format
+- added or changed configuration variables:
+  - `release` is set to "trixie" by default
+  - if `arch` is unset, arm64 architecture is now installed by default if the CPU is 64-bit capable
+
+**Bugfixes:**
+
+- all installer kernel modules now have dependencies included
+- upgrade initial packages
+
 ## raspberrypi-ua-netinst v2.6.0
 
 - support for Debian 12 (bookworm)
