@@ -1196,8 +1196,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	fi
 
 	# base
-	# gnupg is required for 'apt-key' used later in the script
-	base_packages="kmod,gnupg"
+	base_packages="kmod"
 	base_packages="${custom_packages},${base_packages}"
 	if [ "${init_system}" = "systemd" ]; then
 		base_packages="${base_packages},libpam-systemd"
@@ -2118,8 +2117,8 @@ if grep -l '__RELEASE__' /rootfs/etc/apt/sources.list > /dev/null; then
 else
 	echo "OK"
 fi
-echo -n "  Adding raspberrypi.org GPG key to apt-key... "
-(chroot /rootfs /usr/bin/apt-key add - &> /dev/null) < /usr/share/keyrings/raspberrypi.gpg.key || fail
+echo -n "  Adding raspberrypi.org GPG key... "
+cp -a /usr/share/keyrings/raspberrypi-archive-automatic.gpg /rootfs/etc/apt/trusted.gpg.d/ || fail
 echo "OK"
 
 echo -n "  Configuring RaspberryPi repository... "
@@ -2157,19 +2156,6 @@ do
 	if [ "${preffile}" != "./archive_raspberrypi_org.pref" ] && [ -e "${preffile}" ]; then
 		echo -n "  Copying '${preffile}' to /etc/apt/preferences.d/... "
 		sed "s/__RELEASE__/${release_raspbian}/g" "${preffile}" > "/rootfs/etc/apt/preferences.d/${preffile}" || fail
-		echo "OK"
-	fi
-done
-
-# iterate through all the *.key files and add them to apt-key
-for keyfile in ./*.key
-do
-	if [ -e "${keyfile}" ]; then
-		echo "  Adding key '${keyfile}' to apt..."
-		(chroot /rootfs /usr/bin/apt-key add - 2>&1) < "${keyfile}" | sed 's/^/    /'
-		if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-			fail
-		fi
 		echo "OK"
 	fi
 done
