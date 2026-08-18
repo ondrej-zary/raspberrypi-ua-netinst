@@ -582,7 +582,7 @@ fi
 # Config serial output device
 echo
 echo -n "Waiting for serial device... "
-until [ -e /dev/ttyAMA0 ]; do sleep 1s; done
+until [ -e /dev/ttyAMA0 ]; do sleep 1s; [ -e /dev/ttyAMA10 ] && ln -s /dev/ttyAMA10 /dev/ttyAMA0; done
 echo "OK"
 if cmp -s /proc/device-tree/aliases/uart0 /proc/device-tree/aliases/serial0; then
 	ln -s /dev/ttyAMA0 /dev/serial0
