@@ -77,6 +77,8 @@ variables_reset() {
 	hdmi_system_only=
 	usbroot=
 	usbboot=
+	nvmeroot=
+	nvmeboot=
 	cmdline=
 	rootfstype=
 	installer_telnet=
@@ -176,6 +178,8 @@ variables_set_defaults() {
 	variable_set "hdmi_system_only" "0"
 	variable_set "usbroot" "0"
 	variable_set "usbboot" "0"
+	variable_set "nvmeroot" "0"
+	variable_set "nvmeboot" "0"
 	variable_set "cmdline" "console=serial0,115200 console=tty1 fsck.repair=yes"
 	variable_set "rootfstype" "f2fs"
 	variable_set "final_action" "reboot"
@@ -582,7 +586,7 @@ fi
 # Config serial output device
 echo
 echo -n "Waiting for serial device... "
-until [ -e /dev/ttyAMA0 ]; do sleep 1s; done
+until [ -e /dev/ttyAMA0 ]; do sleep 1s; [ -e /dev/ttyAMA10 ] && ln -s /dev/ttyAMA10 /dev/ttyAMA0; done
 echo "OK"
 if cmp -s /proc/device-tree/aliases/uart0 /proc/device-tree/aliases/serial0; then
 	ln -s /dev/ttyAMA0 /dev/serial0
@@ -616,25 +620,37 @@ until [ -n "${bootdev}" ]; do
 			bootpartition=/dev/mmcblk0p1
 		fi
 		umount /boot
-	else
-		if [ -e "/dev/sda1" ]; then
-			echo "USB drive detected."
-			mount /dev/sda1 /boot
-			if [ -e /boot/bootcode.bin ]; then
-				echo "Boot files found on USB drive."
-				bootdev=/dev/sda
-				bootpartition=/dev/sda1
-			fi
-			umount /boot
+	elif [ -e "/dev/sda1" ]; then
+		echo "USB drive detected."
+		mount /dev/sda1 /boot
+		if [ -e /boot/bootcode.bin ]; then
+			echo "Boot files found on USB drive."
+			bootdev=/dev/sda
+			bootpartition=/dev/sda1
 		fi
+		umount /boot
+	elif [ -e "/dev/nvme0n1" ]; then
+		echo "NVMe drive detected."
+		mount /dev/nvme0n1p1 /boot
+		if [ -e /boot/bootcode.bin ]; then
+			echo "Boot files found on NVMe drive."
+			bootdev=/dev/nvme0n1
+			bootpartition=/dev/nvme0n1p1
+		fi
+		umount /boot
 	fi
 	if [ -z "${bootdev}" ]; then sleep 1s; fi
 done
 
 # Assume USB boot and root if there's no SD card and boot device is an USB drive
-if [ ! -e "/dev/mmcblk0" -a "${bootdev}" = "/dev/sda" ]; then
+if [ ! -e "/dev/mmcblk0" ] && [ "${bootdev}" = "/dev/sda" ]; then
 	usbboot=1
 	usbroot=1
+fi
+# Assume NVMe boot and root if there's no SD card and boot device is an NVMe drive
+if [ ! -e "/dev/mmcblk0" ] && [ "${bootdev}" = "/dev/nvme0n1" ]; then
+	nvmeboot=1
+	nvmeroot=1
 fi
 
 # Check if there's an alternative rcS file and excute it
@@ -1322,6 +1338,24 @@ if [ "${usbboot}" = "1" ]; then
 	bootpartition=/dev/sda1
 fi
 
+if [ "${nvmeboot}" = "1" ]; then
+	if [ "${bootdev}" = "/dev/mmcblk0" ]; then
+		echo
+		echo "============================================================================================="
+		echo "                                  !!! IMPORTANT NOTICE !!!"
+		echo "Because you are installing from SD card and want to boot from NVMe,"
+		echo "the system will POWERED OFF after installation."
+		echo "After finishing the installation, you must REMOVE the SD card and reboot the system MANUALLY."
+		echo
+		echo "The installation will continue in 15 seconds..."
+		echo "============================================================================================="
+		sleep 15s
+		final_action=halt
+	fi
+	bootdev=/dev/nvme0n1
+	bootpartition=/dev/nvme0n1p1
+fi
+
 if [ -z "${rootpartition}" ]; then
 	if [ "${usbroot}" = "1" ]; then
 		rootdev=/dev/sda
@@ -1329,6 +1363,13 @@ if [ -z "${rootpartition}" ]; then
 			rootpartition=/dev/sda2
 		else
 			rootpartition=/dev/sda1
+		fi
+	elif [ "${nvmeroot}" = "1" ]; then
+		rootdev=/dev/nvme0n1
+		if [ "${nvmeboot}" = "1" ]; then
+			rootpartition=/dev/nvme0n1p2
+		else
+			rootpartition=/dev/nvme0n1p1
 		fi
 	else
 		rootpartition=/dev/mmcblk0p2
@@ -1404,6 +1445,8 @@ echo "  hdmi_disable_overscan = ${hdmi_disable_overscan}"
 echo "  hdmi_system_only = ${hdmi_system_only}"
 echo "  usbroot = ${usbroot}"
 echo "  usbboot = ${usbboot}"
+echo "  nvmeroot = ${nvmeroot}"
+echo "  nvmeboot = ${nvmeboot}"
 echo "  rootdev = ${rootdev}"
 echo "  rootpartition = ${rootpartition}"
 echo "  rootfstype = ${rootfstype}"

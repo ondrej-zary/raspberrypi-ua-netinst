@@ -395,6 +395,8 @@ fi
 		echo "dtoverlay=disable-bt"
 		echo "[pi4]"
 		echo "dtoverlay=disable-bt"
+		echo "[pi5]"
+		echo "dtoverlay=disable-bt-pi5"
 		echo ""
 		echo "[all]"
 		echo "# Add other config parameters below this line."

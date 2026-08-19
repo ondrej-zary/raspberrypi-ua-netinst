@@ -126,6 +126,8 @@ Note that if the networking configuration is set to use DHCP, no additional pack
 |---------------------|---------|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `usbroot` | `0` | `0`/`1` | Set to "1" to install to first USB disk. |
 | `usbboot` | `0` | `0`/`1` | Set to "1" to boot from first USB disk. This is usually used with 'usbroot=1' and works with model 3 (BCM2837) only. If this is used for the first time, it has to be done from SD-card and the system will shut down after success. Then the SD-card has to be removed before rebooting. |
+| `nvmeroot` | `0` | `0`/`1` | Set to "1" to install to first NVMe disk. |
+| `nvmeboot` | `0` | `0`/`1` | Set to "1" to boot from first NVMe disk. This is usually used with 'nvmeroot=1' and works with model 5 only. The system will shut down after success. Then the SD-card has to be removed before rebooting. |
 | `rootfstype` | `f2fs` | `ext4`/  `f2fs`/  `btrfs` | Sets the file system of the root partition. |
 | `boot_volume_label` |  |  | Sets the volume name of the boot partition. The volume name can be up to 11 characters long. The label is used by most OSes (Windows, Mac OSX and Linux) to identify the SD-card on the desktop and can be useful when using multiple SD-cards. |
 | `root_volume_label` |  |  | Sets the volume name of the root partition. The volume name can be up to 16 characters long. |
