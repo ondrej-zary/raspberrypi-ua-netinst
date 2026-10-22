@@ -990,6 +990,8 @@ if [ "${ip_ipv6}" = "1" ]; then
 fi
 
 # Start telnet console output
+# keep the current stdout/stderr, so they can be restored before nc is stopped
+exec 3>&1 4>&2
 if [ "${installer_telnet}" = "listen" ] || [ "${installer_telnet}" = "connect" ]; then
 	mkfifo telnet.pipe
 	mkfifo /dev/installer-telnet
@@ -2527,6 +2529,8 @@ echo
 echo -n "Installation finished at $(date --date="@${ENDTIME}" --utc)"
 echo " and took $((DURATION/60)) min $((DURATION%60)) sec (${DURATION} seconds)"
 echo
+# restore stdout/stderr first, otherwise writing to the pipe of the killed nc would terminate this script with SIGPIPE
+exec >&3 2>&4 3>&- 4>&-
 killall -q nc
 echo "Printing console to telnet output stopped."
 

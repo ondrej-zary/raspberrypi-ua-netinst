@@ -1,3 +1,12 @@
 # To customize the raspberrypi-unattended-installer:
 #
 # Place your settings in this file as described in the README.md or in the advanced documentation.
+timezone=Europe/Berlin
+keyboard_layout=us
+locales=en_US.UTF-8
+packages=vim,tmux,mtr-tiny,htop,btop,curl
+root_ssh_pubkey="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIQUSmI6xtK4zfYgo5wkFRXZ+NcQrqCTO3Ujn4VSqFvA iiidefix"
+root_ssh_pwlogin=0
+bootsize=+256M
+boot_volume_label=RASPBERRYPI
+rootfstype=ext4
